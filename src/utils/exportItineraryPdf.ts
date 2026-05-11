@@ -2,6 +2,15 @@ import jsPDF from 'jspdf';
 import type { TobaItinerary } from '../services/itineraryService';
 
 const PRODUCT_NAME = 'TobaGen AI Discovery';
+const COLORS = {
+  blue: [10, 102, 194] as const,
+  blueLight: [232, 241, 255] as const,
+  blueTint: [245, 249, 255] as const,
+  border: [206, 223, 246] as const,
+  text: [29, 29, 31] as const,
+  textMuted: [90, 110, 135] as const,
+  white: [255, 255, 255] as const,
+};
 
 export function exportItineraryPdf(itinerary: TobaItinerary) {
   const doc = new jsPDF({
@@ -10,119 +19,254 @@ export function exportItineraryPdf(itinerary: TobaItinerary) {
     format: 'a4',
   });
 
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 16;
-  const contentWidth = pageWidth - margin * 2;
-  const footerY = pageHeight - 8;
-  let y = 22;
+  const layout = {
+    pageWidth: doc.internal.pageSize.getWidth(),
+    pageHeight: doc.internal.pageSize.getHeight(),
+    marginX: 16,
+    marginTop: 18,
+    marginBottom: 16,
+    contentWidth: doc.internal.pageSize.getWidth() - 32,
+  };
 
-  const ensureSpace = (heightNeeded: number) => {
-    if (y + heightNeeded <= pageHeight - 20) {
+  let cursorY = layout.marginTop;
+
+  const startPage = () => {
+    drawPageBackground(doc, layout.pageWidth, layout.pageHeight);
+    drawWatermark(doc, layout.pageWidth, layout.pageHeight);
+    drawFooter(doc, layout.pageWidth, layout.pageHeight);
+    cursorY = layout.marginTop;
+  };
+
+  const reserve = (height: number) => {
+    if (cursorY + height <= layout.pageHeight - layout.marginBottom - 10) {
       return;
     }
 
     doc.addPage();
-    drawPageFrame(doc, pageWidth, pageHeight);
-    drawWatermark(doc, pageWidth, pageHeight);
-    drawFooter(doc, pageWidth, footerY);
-    y = 22;
+    startPage();
   };
 
-  drawPageFrame(doc, pageWidth, pageHeight);
-  drawWatermark(doc, pageWidth, pageHeight);
-  drawFooter(doc, pageWidth, footerY);
+  startPage();
 
-  doc.setFillColor(10, 102, 194);
-  doc.roundedRect(margin, y, contentWidth, 32, 9, 9, 'F');
+  cursorY = drawHeaderCard(doc, itinerary, layout.marginX, cursorY, layout.contentWidth) + 10;
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text(PRODUCT_NAME, margin + 8, y + 8);
-  doc.setFontSize(24);
-  doc.text(itinerary.title, margin + 8, y + 18, { maxWidth: contentWidth - 16 });
+  reserve(34);
+  drawSectionHeading(doc, layout.marginX, cursorY, 'Journey Overview');
+  cursorY += 8;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  const summaryLines = doc.splitTextToSize(itinerary.summary, contentWidth - 16);
-  doc.text(summaryLines, margin + 8, y + 26);
-  y += Math.max(36, 22 + summaryLines.length * 5);
-
-  y += 8;
-  ensureSpace(24);
-  drawSectionTitle(doc, margin, y, 'Journey Overview');
-  y += 10;
-
-  const overviewCards = [
+  const overviewCardWidth = (layout.contentWidth - 8) / 3;
+  const overviewValues = [
     { label: 'Duration', value: `${itinerary.days.length} day plan` },
     { label: 'Highlights', value: `${itinerary.recommendedPlaces.length} places` },
     { label: 'Travel Notes', value: `${itinerary.travelTips.length} tips` },
   ];
 
-  const cardWidth = (contentWidth - 8) / 3;
-  overviewCards.forEach((card, index) => {
-    const cardX = margin + index * (cardWidth + 4);
-    drawInfoCard(doc, cardX, y, cardWidth, 24, card.label, card.value);
+  overviewValues.forEach((item, index) => {
+    drawInfoCard(doc, layout.marginX + index * (overviewCardWidth + 4), cursorY, overviewCardWidth, 22, item.label, item.value);
   });
-  y += 32;
+  cursorY += 30;
 
-  itinerary.days.forEach((day) => {
-    const activityHeights = day.activities.map((activity) => estimateTextBlockHeight(doc, [
-      `• ${activity.time} - ${activity.activity}`,
-      `${activity.location}`,
-      `${activity.description}`,
-    ], contentWidth - 20));
-    const dayHeight = 24 + activityHeights.reduce((total, height) => total + height + 4, 0);
+  for (const day of itinerary.days) {
+    const dayHeight = measureDayCardHeight(doc, day, layout.contentWidth);
+    reserve(dayHeight);
+    drawDayCard(doc, layout.marginX, cursorY, layout.contentWidth, day);
+    cursorY += dayHeight + 6;
+  }
 
-    ensureSpace(dayHeight + 8);
-    drawDayCard(doc, margin, y, contentWidth, day, pageHeight);
-    y += dayHeight + 8;
-  });
+  reserve(18);
+  drawSectionHeading(doc, layout.marginX, cursorY, 'Recommended Places');
+  cursorY += 8;
 
-  ensureSpace(22);
-  drawSectionTitle(doc, margin, y, 'Recommended Places');
-  y += 10;
+  for (const place of itinerary.recommendedPlaces) {
+    const placeHeight = measurePlaceCardHeight(doc, place, layout.contentWidth);
+    reserve(placeHeight);
+    drawPlaceCard(doc, layout.marginX, cursorY, layout.contentWidth, place);
+    cursorY += placeHeight + 5;
+  }
 
-  itinerary.recommendedPlaces.forEach((place) => {
-    const placeHeight = estimateTextBlockHeight(doc, [
-      place.name,
-      `${place.category} • ${place.bestTime}`,
-      `${place.location.lat.toFixed(2)}° N, ${place.location.lng.toFixed(2)}° E`,
-      place.description,
-    ], contentWidth - 20) + 10;
-
-    ensureSpace(placeHeight);
-    drawPlaceCard(doc, margin, y, contentWidth, placeHeight, place);
-    y += placeHeight + 6;
-  });
-
-  ensureSpace(20);
-  drawSectionTitle(doc, margin, y, 'Travel Tips');
-  y += 10;
+  reserve(18);
+  drawSectionHeading(doc, layout.marginX, cursorY, 'Travel Tips');
+  cursorY += 8;
 
   itinerary.travelTips.forEach((tip, index) => {
-    const tipHeight = estimateTextBlockHeight(doc, [`${index + 1}. ${tip}`], contentWidth - 18) + 8;
-    ensureSpace(tipHeight);
-    drawTipCard(doc, margin, y, contentWidth, tipHeight, `${index + 1}. ${tip}`);
-    y += tipHeight + 5;
+    const content = `${index + 1}. ${tip}`;
+    const tipHeight = measureTextHeight(doc, content, layout.contentWidth - 12, 10, 5) + 8;
+    reserve(tipHeight);
+    drawTipCard(doc, layout.marginX, cursorY, layout.contentWidth, content);
+    cursorY += tipHeight + 4;
   });
 
   doc.save(`${slugify(itinerary.title)}.pdf`);
 }
 
-function drawPageFrame(doc: jsPDF, pageWidth: number, pageHeight: number) {
-  doc.setFillColor(247, 250, 255);
+function drawHeaderCard(doc: jsPDF, itinerary: TobaItinerary, x: number, y: number, width: number) {
+  const titleHeight = measureTextHeight(doc, itinerary.title, width - 18, 22, 8.2);
+  const summaryHeight = measureTextHeight(doc, itinerary.summary, width - 18, 11, 5.2);
+  const cardHeight = 18 + titleHeight + summaryHeight + 16;
+
+  setFill(doc, COLORS.blue);
+  doc.roundedRect(x, y, width, cardHeight, 8, 8, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(255, 255, 255);
+  doc.text(PRODUCT_NAME, x + 9, y + 8);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(formatGeneratedAt(), x + width - 9, y + 8, { align: 'right' });
+
+  let textY = y + 18;
+  textY = drawParagraph(doc, itinerary.title, x + 9, textY, width - 18, 22, 8.2, 'bold', [255, 255, 255]) + 2;
+  textY = drawParagraph(doc, itinerary.summary, x + 9, textY, width - 18, 11, 5.2, 'normal', [242, 247, 255]) + 4;
+
+  return Math.max(textY, y + cardHeight);
+}
+
+function drawSectionHeading(doc: jsPDF, x: number, y: number, title: string) {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...COLORS.blue);
+  doc.text(title, x, y);
+}
+
+function drawInfoCard(doc: jsPDF, x: number, y: number, width: number, height: number, label: string, value: string) {
+  setFill(doc, COLORS.white);
+  setDraw(doc, COLORS.border);
+  doc.roundedRect(x, y, width, height, 5, 5, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...COLORS.blue);
+  doc.text(label.toUpperCase(), x + 5, y + 7);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(...COLORS.text);
+  drawParagraph(doc, value, x + 5, y + 13, width - 10, 11, 4.8, 'normal', COLORS.text);
+}
+
+function drawDayCard(doc: jsPDF, x: number, y: number, width: number, day: TobaItinerary['days'][number]) {
+  const height = measureDayCardHeight(doc, day, width);
+
+  setFill(doc, COLORS.white);
+  setDraw(doc, COLORS.border);
+  doc.roundedRect(x, y, width, height, 7, 7, 'FD');
+
+  setFill(doc, COLORS.blueLight);
+  doc.roundedRect(x + 1, y + 1, width - 2, 18, 6, 6, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(...COLORS.blue);
+  doc.text(`DAY ${day.day}`, x + 6, y + 7);
+  doc.setFontSize(15);
+  doc.setTextColor(...COLORS.text);
+  doc.text(day.title, x + 6, y + 14);
+
+  let innerY = y + 26;
+  day.activities.forEach((activity, index) => {
+    const blockHeight = measureActivityBlockHeight(doc, activity, width - 12);
+    setFill(doc, COLORS.blueTint);
+    doc.roundedRect(x + 4, innerY - 4, width - 8, blockHeight + 6, 4, 4, 'F');
+
+    innerY = drawParagraph(
+      doc,
+      `${activity.time} - ${activity.activity}`,
+      x + 8,
+      innerY,
+      width - 16,
+      11,
+      5.2,
+      'bold',
+      COLORS.text,
+    ) + 1.5;
+
+    innerY = drawParagraph(
+      doc,
+      activity.location,
+      x + 8,
+      innerY,
+      width - 16,
+      9.5,
+      4.4,
+      'normal',
+      COLORS.blue,
+    ) + 1.2;
+
+    innerY = drawParagraph(
+      doc,
+      activity.description,
+      x + 8,
+      innerY,
+      width - 16,
+      10,
+      4.8,
+      'normal',
+      COLORS.textMuted,
+    ) + 3;
+
+    if (index < day.activities.length - 1) {
+      innerY += 1;
+    }
+  });
+}
+
+function drawPlaceCard(doc: jsPDF, x: number, y: number, width: number, place: TobaItinerary['recommendedPlaces'][number]) {
+  const height = measurePlaceCardHeight(doc, place, width);
+
+  setFill(doc, COLORS.white);
+  setDraw(doc, COLORS.border);
+  doc.roundedRect(x, y, width, height, 6, 6, 'FD');
+
+  let innerY = y + 8;
+  innerY = drawParagraph(doc, place.name, x + 6, innerY, width - 12, 12, 5.4, 'bold', COLORS.text) + 1;
+  innerY = drawParagraph(
+    doc,
+    `${place.category} - Best time: ${place.bestTime}`,
+    x + 6,
+    innerY,
+    width - 12,
+    9,
+    4.3,
+    'normal',
+    COLORS.blue,
+  ) + 1;
+  innerY = drawParagraph(
+    doc,
+    `Lat ${place.location.lat.toFixed(2)}, Lng ${place.location.lng.toFixed(2)}`,
+    x + 6,
+    innerY,
+    width - 12,
+    9,
+    4.3,
+    'normal',
+    COLORS.textMuted,
+  ) + 1.5;
+  drawParagraph(doc, place.description, x + 6, innerY, width - 12, 10, 4.8, 'normal', COLORS.textMuted);
+}
+
+function drawTipCard(doc: jsPDF, x: number, y: number, width: number, tip: string) {
+  const height = measureTextHeight(doc, tip, width - 12, 10, 5) + 8;
+
+  setFill(doc, COLORS.blueTint);
+  setDraw(doc, COLORS.border);
+  doc.roundedRect(x, y, width, height, 5, 5, 'FD');
+  drawParagraph(doc, tip, x + 6, y + 7, width - 12, 10, 5, 'normal', COLORS.text);
+}
+
+function drawPageBackground(doc: jsPDF, pageWidth: number, pageHeight: number) {
+  setFill(doc, [247, 250, 255]);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
-  doc.setFillColor(227, 238, 252);
+  setFill(doc, [227, 238, 252]);
   doc.rect(0, 0, pageWidth, 12, 'F');
 }
 
 function drawWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.saveGraphicsState();
-  doc.setTextColor(220, 231, 245);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(30);
+  doc.setFontSize(28);
+  doc.setTextColor(225, 235, 248);
   doc.text(PRODUCT_NAME, pageWidth / 2, pageHeight / 2, {
     align: 'center',
     angle: 32,
@@ -130,149 +274,112 @@ function drawWatermark(doc: jsPDF, pageWidth: number, pageHeight: number) {
   doc.restoreGraphicsState();
 }
 
-function drawFooter(doc: jsPDF, pageWidth: number, footerY: number) {
+function drawFooter(doc: jsPDF, pageWidth: number, pageHeight: number) {
+  const footerY = pageHeight - 8;
   const pageNumber = doc.getCurrentPageInfo().pageNumber;
-  doc.setDrawColor(209, 221, 240);
+
+  setDraw(doc, [209, 221, 240]);
   doc.line(16, footerY - 4, pageWidth - 16, footerY - 4);
-  doc.setTextColor(90, 110, 135);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
+  doc.setTextColor(...COLORS.textMuted);
   doc.text('Crafted for personalized Lake Toba planning', 16, footerY);
-  doc.text(`${PRODUCT_NAME} • Page ${pageNumber}`, pageWidth - 16, footerY, { align: 'right' });
+  doc.text(`${PRODUCT_NAME} - Page ${pageNumber}`, pageWidth - 16, footerY, { align: 'right' });
 }
 
-function drawSectionTitle(doc: jsPDF, x: number, y: number, title: string) {
-  doc.setTextColor(10, 102, 194);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.text(title, x, y);
-}
-
-function drawInfoCard(doc: jsPDF, x: number, y: number, width: number, height: number, label: string, value: string) {
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(206, 223, 246);
-  doc.roundedRect(x, y, width, height, 5, 5, 'FD');
-  doc.setTextColor(10, 102, 194);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text(label.toUpperCase(), x + 5, y + 7);
-  doc.setTextColor(29, 29, 31);
-  doc.setFontSize(12);
-  doc.text(value, x + 5, y + 15, { maxWidth: width - 10 });
-}
-
-function drawDayCard(
+function drawParagraph(
   doc: jsPDF,
+  text: string,
   x: number,
-  y: number,
-  width: number,
-  day: TobaItinerary['days'][number],
-  pageHeight: number,
+  startY: number,
+  maxWidth: number,
+  fontSize: number,
+  lineHeight: number,
+  fontStyle: 'normal' | 'bold',
+  color: readonly [number, number, number],
 ) {
-  const headerHeight = 18;
-  const activityBlockHeights = day.activities.map((activity) => estimateTextBlockHeight(doc, [
-    `• ${activity.time} - ${activity.activity}`,
-    `${activity.location}`,
-    `${activity.description}`,
-  ], width - 20));
-  const totalHeight = headerHeight + activityBlockHeights.reduce((sum, height) => sum + height + 4, 0) + 8;
+  const lines = getTextLines(doc, text, maxWidth, fontSize, fontStyle);
 
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(206, 223, 246);
-  doc.roundedRect(x, y, width, totalHeight, 7, 7, 'FD');
+  doc.setFont('helvetica', fontStyle);
+  doc.setFontSize(fontSize);
+  doc.setTextColor(...color);
 
-  doc.setFillColor(232, 241, 255);
-  doc.roundedRect(x + 1, y + 1, width - 2, headerHeight, 6, 6, 'F');
-  doc.setTextColor(10, 102, 194);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text(`DAY ${day.day}`, x + 6, y + 7);
-  doc.setTextColor(29, 29, 31);
-  doc.setFontSize(15);
-  doc.text(day.title, x + 6, y + 14, { maxWidth: width - 12 });
-
-  let innerY = y + headerHeight + 7;
-  day.activities.forEach((activity) => {
-    doc.setTextColor(29, 29, 31);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    const titleLines = doc.splitTextToSize(`• ${activity.time} - ${activity.activity}`, width - 20);
-    doc.text(titleLines, x + 6, innerY);
-    innerY += titleLines.length * 5;
-
-    doc.setTextColor(10, 102, 194);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const locationLines = doc.splitTextToSize(activity.location, width - 20);
-    doc.text(locationLines, x + 6, innerY);
-    innerY += locationLines.length * 4.5;
-
-    doc.setTextColor(74, 74, 79);
-    doc.setFontSize(10);
-    const descLines = doc.splitTextToSize(activity.description, width - 20);
-    doc.text(descLines, x + 6, innerY);
-    innerY += descLines.length * 4.5 + 4;
+  let currentY = startY;
+  lines.forEach((line) => {
+    doc.text(line, x, currentY);
+    currentY += lineHeight;
   });
 
-  if (y + totalHeight > pageHeight - 20) {
-    doc.setDrawColor(206, 223, 246);
-  }
+  return currentY;
 }
 
-function drawPlaceCard(
+function getTextLines(
   doc: jsPDF,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  place: TobaItinerary['recommendedPlaces'][number],
+  text: string,
+  maxWidth: number,
+  fontSize: number,
+  fontStyle: 'normal' | 'bold',
 ) {
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(206, 223, 246);
-  doc.roundedRect(x, y, width, height, 6, 6, 'FD');
-
-  doc.setTextColor(29, 29, 31);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text(place.name, x + 6, y + 8, { maxWidth: width - 12 });
-
-  doc.setTextColor(10, 102, 194);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(`${place.category} • Best time: ${place.bestTime}`, x + 6, y + 14, { maxWidth: width - 12 });
-
-  doc.setTextColor(90, 110, 135);
-  doc.text(`${place.location.lat.toFixed(2)}° N, ${place.location.lng.toFixed(2)}° E`, x + 6, y + 20);
-
-  doc.setTextColor(74, 74, 79);
-  doc.setFontSize(10);
-  const descLines = doc.splitTextToSize(place.description, width - 12);
-  doc.text(descLines, x + 6, y + 27);
+  doc.setFont('helvetica', fontStyle);
+  doc.setFontSize(fontSize);
+  return doc.splitTextToSize(text, maxWidth) as string[];
 }
 
-function drawTipCard(doc: jsPDF, x: number, y: number, width: number, height: number, tip: string) {
-  doc.setFillColor(239, 246, 255);
-  doc.setDrawColor(206, 223, 246);
-  doc.roundedRect(x, y, width, height, 5, 5, 'FD');
-  doc.setTextColor(29, 29, 31);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  const tipLines = doc.splitTextToSize(tip, width - 12);
-  doc.text(tipLines, x + 6, y + 8);
+function measureTextHeight(
+  doc: jsPDF,
+  text: string,
+  maxWidth: number,
+  fontSize: number,
+  lineHeight: number,
+  fontStyle: 'normal' | 'bold' = 'normal',
+) {
+  const lines = getTextLines(doc, text, maxWidth, fontSize, fontStyle);
+  return lines.length * lineHeight;
 }
 
-function estimateTextBlockHeight(doc: jsPDF, blocks: string[], width: number) {
-  let total = 0;
-  blocks.forEach((block, index) => {
-    const lines = doc.splitTextToSize(block, width);
-    total += lines.length * (index === 0 ? 5 : 4.5);
-  });
-  return total;
+function measureActivityBlockHeight(
+  doc: jsPDF,
+  activity: TobaItinerary['days'][number]['activities'][number],
+  width: number,
+) {
+  return (
+    measureTextHeight(doc, `${activity.time} - ${activity.activity}`, width - 4, 11, 5.2, 'bold') +
+    measureTextHeight(doc, activity.location, width - 4, 9.5, 4.4) +
+    measureTextHeight(doc, activity.description, width - 4, 10, 4.8) +
+    8
+  );
+}
+
+function measureDayCardHeight(doc: jsPDF, day: TobaItinerary['days'][number], width: number) {
+  return 26 + day.activities.reduce((total, activity) => total + measureActivityBlockHeight(doc, activity, width - 8) + 4, 0);
+}
+
+function measurePlaceCardHeight(doc: jsPDF, place: TobaItinerary['recommendedPlaces'][number], width: number) {
+  return (
+    measureTextHeight(doc, place.name, width - 12, 12, 5.4, 'bold') +
+    measureTextHeight(doc, `${place.category} - Best time: ${place.bestTime}`, width - 12, 9, 4.3) +
+    measureTextHeight(doc, `Lat ${place.location.lat.toFixed(2)}, Lng ${place.location.lng.toFixed(2)}`, width - 12, 9, 4.3) +
+    measureTextHeight(doc, place.description, width - 12, 10, 4.8) +
+    12
+  );
+}
+
+function setFill(doc: jsPDF, color: readonly [number, number, number]) {
+  doc.setFillColor(color[0], color[1], color[2]);
+}
+
+function setDraw(doc: jsPDF, color: readonly [number, number, number]) {
+  doc.setDrawColor(color[0], color[1], color[2]);
+}
+
+function formatGeneratedAt() {
+  return new Intl.DateTimeFormat('en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date());
 }
 
 function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'toba-itinerary';
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'toba-itinerary';
 }

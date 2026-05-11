@@ -10,7 +10,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import RecommendationForm from './components/RecommendationForm';
 import ItineraryView from './components/ItineraryView';
-import SavedPlans, { type SavedPlan } from './components/SavedPlans';
+import SavedPlans from './components/SavedPlans';
 import Footer from './components/Footer';
 import {
   generateChatRecommendation,
@@ -18,35 +18,28 @@ import {
   type RecommendationRequest,
   type TobaItinerary,
 } from './services/itineraryService';
-
-const SAVED_PLANS_STORAGE_KEY = 'toba-discovery:saved-plans';
+import { loadSavedPlans, persistSavedPlans, type SavedPlan } from './utils/savedPlansStorage';
 
 export default function App() {
   const [itinerary, setItinerary] = useState<TobaItinerary | null>(null);
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
+  const [hasLoadedSavedPlans, setHasLoadedSavedPlans] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(SAVED_PLANS_STORAGE_KEY);
-      if (!raw) {
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as SavedPlan[];
-      if (Array.isArray(parsed)) {
-        setSavedPlans(parsed);
-      }
-    } catch {
-      window.localStorage.removeItem(SAVED_PLANS_STORAGE_KEY);
-    }
+    setSavedPlans(loadSavedPlans());
+    setHasLoadedSavedPlans(true);
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(SAVED_PLANS_STORAGE_KEY, JSON.stringify(savedPlans));
-  }, [savedPlans]);
+    if (!hasLoadedSavedPlans) {
+      return;
+    }
+
+    persistSavedPlans(savedPlans);
+  }, [hasLoadedSavedPlans, savedPlans]);
 
   const scrollToResults = () => {
     window.setTimeout(() => {
@@ -93,7 +86,7 @@ export default function App() {
       itinerary,
     };
 
-    setSavedPlans((currentPlans) => [nextPlan, ...currentPlans]);
+    setSavedPlans((currentPlans) => [nextPlan, ...currentPlans].slice(0, 20));
   };
 
   const handleExportPdf = async () => {

@@ -1,11 +1,5 @@
 import { Bookmark, CalendarDays, Clock3, MapPinned, Trash2 } from "lucide-react";
-import type { TobaItinerary } from "../services/itineraryService";
-
-export interface SavedPlan {
-  id: string;
-  savedAt: string;
-  itinerary: TobaItinerary;
-}
+import type { SavedPlan } from "../utils/savedPlansStorage";
 
 export default function SavedPlans({
   plans,

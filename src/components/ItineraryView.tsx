@@ -116,7 +116,7 @@ export default function ItineraryView({
                 <div key={place.name} className="group/item pb-6 border-b border-apple-bg last:border-0 last:pb-0">
                   <h4 className="font-bold text-base mb-1 group-hover/item:text-apple-blue transition-colors">{place.name}</h4>
                   <p className="text-[11px] text-apple-subtext uppercase tracking-tighter mb-2">
-                    {place.location.lat.toFixed(2)}° N, {place.location.lng.toFixed(2)}° E
+                    Lat {place.location.lat.toFixed(2)}, Lng {place.location.lng.toFixed(2)}
                   </p>
                   <p className="text-xs text-apple-secondary leading-relaxed mb-4">{place.description}</p>
                   <div className="flex items-center gap-3 text-[9px] uppercase font-bold tracking-widest">

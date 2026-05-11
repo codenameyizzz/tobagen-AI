@@ -238,11 +238,12 @@ async function generateItineraryResponse(prompt: string) {
       },
     });
   } catch (error) {
-    if (!shouldFallbackToSecondaryModel(error)) {
+    const fallbackReason = getFallbackReason(error);
+    if (!fallbackReason) {
       throw error;
     }
 
-    console.warn(`Primary model ${primaryModel} is unavailable or rate-limited. Falling back to ${fallbackModel}.`);
+    console.warn(`Primary model ${primaryModel} hit a fallback condition: ${fallbackReason}. Falling back to ${fallbackModel}.`);
 
     return ai.models.generateContent({
       model: fallbackModel,
@@ -256,20 +257,31 @@ async function generateItineraryResponse(prompt: string) {
   }
 }
 
-function shouldFallbackToSecondaryModel(error: unknown): boolean {
+function getFallbackReason(error: unknown): string | null {
   if (!fallbackModel || fallbackModel === primaryModel) {
-    return false;
+    return null;
   }
 
-  const message = extractErrorMessage(error).toLowerCase();
-  return (
-    message.includes('429') ||
-    message.includes('resource_exhausted') ||
-    message.includes('quota') ||
-    message.includes('rate limit') ||
-    message.includes('rate_limit') ||
-    message.includes('exceeded')
-  );
+  const errorSignal = extractErrorSignal(error);
+  if (errorSignal.statusCode === 429) {
+    return 'HTTP 429 from primary model';
+  }
+
+  const quotaPatterns = [
+    'resource_exhausted',
+    'quota',
+    'rate limit',
+    'rate_limit',
+    'too many requests',
+    'requests per day',
+    'daily limit',
+    'per day',
+    'rpd',
+    'exceeded',
+  ];
+
+  const matchedPattern = quotaPatterns.find((pattern) => errorSignal.message.includes(pattern));
+  return matchedPattern ? `matched quota pattern "${matchedPattern}"` : null;
 }
 
 function getModelConfigurationError(error: unknown): string | null {
@@ -295,4 +307,23 @@ function extractErrorMessage(error: unknown): string {
   } catch {
     return '';
   }
+}
+
+function extractErrorSignal(error: unknown) {
+  const statusCode = getNumericProperty(error, 'status') ?? getNumericProperty(error, 'code');
+  const message = extractErrorMessage(error).toLowerCase();
+
+  return {
+    statusCode,
+    message,
+  };
+}
+
+function getNumericProperty(error: unknown, key: string): number | null {
+  if (typeof error !== 'object' || error === null) {
+    return null;
+  }
+
+  const value = Reflect.get(error, key);
+  return typeof value === 'number' ? value : null;
 }
