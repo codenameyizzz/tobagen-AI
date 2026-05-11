@@ -22,13 +22,14 @@ async function requestItinerary(mode: 'form' | 'chat', payload: RecommendationRe
     body: JSON.stringify({ mode, payload }),
   });
 
-  const data = (await response.json().catch(() => null)) as { error?: string } | TobaItinerary | null;
+  const rawText = await response.text();
+  const data = parseResponseBody(rawText) as { error?: string } | TobaItinerary | null;
 
   if (!response.ok) {
     throw new Error(
       data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
         ? data.error
-        : 'The itinerary service is currently unavailable.',
+        : rawText.trim() || 'The itinerary service is currently unavailable.',
     );
   }
 
@@ -37,4 +38,16 @@ async function requestItinerary(mode: 'form' | 'chat', payload: RecommendationRe
   }
 
   return data;
+}
+
+function parseResponseBody(rawText: string): unknown {
+  if (!rawText.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawText);
+  } catch {
+    return null;
+  }
 }
