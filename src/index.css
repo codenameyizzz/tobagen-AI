@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", sans-serif; /* Apple style uses Inter for everything usually, or SF Pro */
+  
+  --color-apple-bg: #F5F5F7;
+  --color-apple-text: #1D1D1F;
+  --color-apple-subtext: #86868B;
+  --color-apple-secondary: #424245;
+  --color-apple-blue: #0066CC;
+  --color-apple-border: #D2D2D7;
+  
+  --radius-apple-lg: 32px;
+  --radius-apple-md: 28px;
+  --radius-apple-sm: 16px;
+}
+
+@layer base {
+  body {
+    @apply bg-apple-bg text-apple-text font-sans antialiased;
+  }
+}
+
+@layer components {
+  .apple-glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/40 shadow-sm transition-all duration-300;
+  }
+  
+  .apple-card {
+    @apply bg-white rounded-apple-lg shadow-lg shadow-black/5 border border-apple-border overflow-hidden;
+  }
+  
+  .apple-input {
+    @apply bg-apple-bg border-none rounded-apple-sm p-4 text-sm focus:ring-2 focus:ring-apple-blue/20 transition-all outline-none;
+  }
+  
+  .apple-button-primary {
+    @apply bg-apple-blue text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm active:scale-95;
+  }
+  
+  .apple-button-secondary {
+    @apply bg-black text-white text-xs font-semibold px-4 py-2 rounded-full hover:bg-apple-secondary transition-colors;
+  }
+}
