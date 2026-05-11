@@ -1,8 +1,8 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createHealthResponse, createItineraryResponse } from './httpHandlers';
-import { getRuntimeConfig, loadEnvironment } from './config';
+import { createHealthResponse, createItineraryResponse } from './httpHandlers.js';
+import { getRuntimeConfig, loadEnvironment } from './config.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 loadEnvironment(rootDir);

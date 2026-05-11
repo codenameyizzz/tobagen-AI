@@ -1,10 +1,10 @@
-import { getRuntimeConfig, type RuntimeConfig } from './config';
+import { getRuntimeConfig, type RuntimeConfig } from './config.js';
 import {
   createHealthPayload,
   generateItinerary,
   getUserFacingGenerationError,
   validateItineraryRequest,
-} from './itineraryCore';
+} from './itineraryCore.js';
 
 export function createHealthResponse(config: RuntimeConfig = getRuntimeConfig()) {
   return {

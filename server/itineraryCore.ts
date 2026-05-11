@@ -1,11 +1,10 @@
-import { GoogleGenAI } from '@google/genai';
 import {
   isRecommendationRequest,
   isTobaItinerary,
   type RecommendationRequest,
   type TobaItinerary,
-} from '../shared/itinerary';
-import type { RuntimeConfig } from './config';
+} from '../shared/itinerary.js';
+import type { RuntimeConfig } from './config.js';
 
 type ValidatedPayload =
   | { mode: 'form'; payload: RecommendationRequest }
@@ -127,6 +126,7 @@ export async function generateItinerary(config: RuntimeConfig, input: ValidatedP
     throw new Error('Missing GEMINI_API_KEY.');
   }
 
+  const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey: config.apiKey });
   const prompt = buildPrompt(input);
 

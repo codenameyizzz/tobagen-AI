@@ -1,4 +1,4 @@
-import { createItineraryResponse } from '../server/httpHandlers';
+import { createItineraryResponse } from '../server/httpHandlers.js';
 
 type ApiRequest = {
   method?: string;

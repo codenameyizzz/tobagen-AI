@@ -1,4 +1,4 @@
-import { createHealthResponse } from '../server/httpHandlers';
+import { createHealthResponse } from '../server/httpHandlers.js';
 
 type ApiResponse = {
   status: (statusCode: number) => ApiResponse;

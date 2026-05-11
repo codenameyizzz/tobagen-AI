@@ -1,5 +1,7 @@
-import dotenv from 'dotenv';
 import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 export interface RuntimeConfig {
   apiKey?: string;
@@ -15,7 +17,7 @@ export function loadEnvironment(projectRoot: string) {
   ];
 
   const mergedEnv = envPaths.reduce<Record<string, string>>((accumulator, envPath) => {
-    const result = dotenv.config({ path: envPath });
+    const result = loadDotenvFile(envPath);
     if (!result.parsed) {
       return accumulator;
     }
@@ -30,6 +32,15 @@ export function loadEnvironment(projectRoot: string) {
     if (process.env[key] === undefined) {
       process.env[key] = value;
     }
+  }
+}
+
+function loadDotenvFile(envPath: string): { parsed?: Record<string, string> } {
+  try {
+    const dotenv = require('dotenv') as typeof import('dotenv');
+    return dotenv.config({ path: envPath });
+  } catch {
+    return {};
   }
 }
 
