@@ -5,7 +5,8 @@
 
 import { motion } from "motion/react";
 import type { TobaItinerary } from "../services/itineraryService";
-import { BookmarkPlus, Calendar, Download, MapPin, Sparkles, Clock, Globe } from "lucide-react";
+import { BookmarkPlus, Calendar, Download, MapPin, Sparkles, Clock, Globe, ExternalLink } from "lucide-react";
+import { formatCoordinates, getGoogleMapsEmbedUrl, getGoogleMapsUrl } from "../utils/googleMaps";
 
 export default function ItineraryView({
   itinerary,
@@ -113,16 +114,36 @@ export default function ItineraryView({
             </h3>
             <div className="space-y-8 relative z-10">
               {itinerary.recommendedPlaces.map((place) => (
-                <div key={place.name} className="group/item pb-6 border-b border-apple-bg last:border-0 last:pb-0">
+                <div key={place.name} className="group/item pb-8 border-b border-apple-bg last:border-0 last:pb-0">
+                  <div className="aspect-[16/10] overflow-hidden rounded-2xl border border-apple-border bg-apple-bg mb-4 shadow-inner">
+                    <iframe
+                      title={`Google Maps preview for ${place.name}`}
+                      src={getGoogleMapsEmbedUrl(place)}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      className="h-full w-full border-0"
+                    />
+                  </div>
+
                   <h4 className="font-bold text-base mb-1 group-hover/item:text-apple-blue transition-colors">{place.name}</h4>
                   <p className="text-[11px] text-apple-subtext uppercase tracking-tighter mb-2">
-                    Lat {place.location.lat.toFixed(2)}, Lng {place.location.lng.toFixed(2)}
+                    {formatCoordinates(place)}
                   </p>
                   <p className="text-xs text-apple-secondary leading-relaxed mb-4">{place.description}</p>
-                  <div className="flex items-center gap-3 text-[9px] uppercase font-bold tracking-widest">
+                  <div className="flex flex-wrap items-center gap-3 text-[9px] uppercase font-bold tracking-widest">
                     <span className="bg-apple-bg px-2 py-1 rounded text-apple-subtext">{place.category}</span>
+                    <span className="bg-blue-50 px-2 py-1 rounded text-apple-blue">{place.bestTime}</span>
                     <span className="text-apple-blue">98% Match</span>
                   </div>
+                  <a
+                    href={getGoogleMapsUrl(place)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-apple-blue px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-200/60 transition-colors hover:bg-blue-700"
+                  >
+                    Open in Google Maps
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
                 </div>
               ))}
             </div>

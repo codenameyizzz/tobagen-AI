@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { TobaItinerary } from '../services/itineraryService';
+import { formatCoordinates, getGoogleMapsUrl } from './googleMaps';
 
 const PRODUCT_NAME = 'TobaGen AI Discovery';
 const COLORS = {
@@ -234,7 +235,7 @@ function drawPlaceCard(doc: jsPDF, x: number, y: number, width: number, place: T
   ) + 1;
   innerY = drawParagraph(
     doc,
-    `Lat ${place.location.lat.toFixed(2)}, Lng ${place.location.lng.toFixed(2)}`,
+    formatCoordinates(place),
     x + 6,
     innerY,
     width - 12,
@@ -243,6 +244,12 @@ function drawPlaceCard(doc: jsPDF, x: number, y: number, width: number, place: T
     'normal',
     COLORS.textMuted,
   ) + 1.5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.blue);
+  doc.textWithLink('Open in Google Maps', x + 6, innerY, { url: getGoogleMapsUrl(place) });
+  innerY += 5;
+
   drawParagraph(doc, place.description, x + 6, innerY, width - 12, 10, 4.8, 'normal', COLORS.textMuted);
 }
 
@@ -358,9 +365,9 @@ function measurePlaceCardHeight(doc: jsPDF, place: TobaItinerary['recommendedPla
   return (
     measureTextHeight(doc, place.name, width - 12, 12, 5.4, 'bold') +
     measureTextHeight(doc, `${place.category} - Best time: ${place.bestTime}`, width - 12, 9, 4.3) +
-    measureTextHeight(doc, `Lat ${place.location.lat.toFixed(2)}, Lng ${place.location.lng.toFixed(2)}`, width - 12, 9, 4.3) +
+    measureTextHeight(doc, formatCoordinates(place), width - 12, 9, 4.3) +
     measureTextHeight(doc, place.description, width - 12, 10, 4.8) +
-    12
+    17
   );
 }
 
