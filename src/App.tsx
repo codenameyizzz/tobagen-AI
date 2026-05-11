@@ -3,16 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { AlertCircle } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import RecommendationForm from './components/RecommendationForm';
 import ItineraryView from './components/ItineraryView';
+import SavedPlans, { type SavedPlan } from './components/SavedPlans';
 import Footer from './components/Footer';
 import {
   generateChatRecommendation,
@@ -20,14 +18,35 @@ import {
   type RecommendationRequest,
   type TobaItinerary,
 } from './services/itineraryService';
-import { motion, AnimatePresence } from 'motion/react';
-import { AlertCircle } from 'lucide-react';
+
+const SAVED_PLANS_STORAGE_KEY = 'toba-discovery:saved-plans';
 
 export default function App() {
   const [itinerary, setItinerary] = useState<TobaItinerary | null>(null);
+  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(SAVED_PLANS_STORAGE_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as SavedPlan[];
+      if (Array.isArray(parsed)) {
+        setSavedPlans(parsed);
+      }
+    } catch {
+      window.localStorage.removeItem(SAVED_PLANS_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(SAVED_PLANS_STORAGE_KEY, JSON.stringify(savedPlans));
+  }, [savedPlans]);
 
   const scrollToResults = () => {
     window.setTimeout(() => {
@@ -63,26 +82,61 @@ export default function App() {
     }
   };
 
+  const handleSavePlan = () => {
+    if (!itinerary || isCurrentPlanSaved) {
+      return;
+    }
+
+    const nextPlan: SavedPlan = {
+      id: `plan-${Date.now()}`,
+      savedAt: new Date().toISOString(),
+      itinerary,
+    };
+
+    setSavedPlans((currentPlans) => [nextPlan, ...currentPlans]);
+  };
+
+  const handleOpenSavedPlan = (plan: SavedPlan) => {
+    setItinerary(plan.itinerary);
+    setError(null);
+    scrollToResults();
+  };
+
+  const handleDeleteSavedPlan = (planId: string) => {
+    setSavedPlans((currentPlans) => currentPlans.filter((plan) => plan.id !== planId));
+  };
+
   const scrollToPlan = () => {
     document.getElementById('planning-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const isCurrentPlanSaved = Boolean(
+    itinerary &&
+      savedPlans.some((plan) => JSON.stringify(plan.itinerary) === JSON.stringify(itinerary)),
+  );
+
   return (
     <div className="min-h-screen">
       <Navbar />
-      
+
       <main>
         <Hero onStart={scrollToPlan} />
-        
-        <RecommendationForm 
-          onSubmit={handleGenerate} 
+
+        <RecommendationForm
+          onSubmit={handleGenerate}
           onChatSubmit={handleChatGenerate}
-          isLoading={isLoading} 
+          isLoading={isLoading}
+        />
+
+        <SavedPlans
+          plans={savedPlans}
+          onOpen={handleOpenSavedPlan}
+          onDelete={handleDeleteSavedPlan}
         />
 
         <AnimatePresence>
           {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
@@ -97,7 +151,7 @@ export default function App() {
 
           {itinerary && (
             <div ref={resultsRef}>
-              <ItineraryView itinerary={itinerary} />
+              <ItineraryView itinerary={itinerary} onSave={handleSavePlan} isSaved={isCurrentPlanSaved} />
             </div>
           )}
         </AnimatePresence>

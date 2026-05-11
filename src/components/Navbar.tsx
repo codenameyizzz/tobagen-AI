@@ -35,8 +35,8 @@ export default function Navbar() {
               {item.label}
             </a>
           ))}
-          <a href="#planning-section" className="apple-button-primary">
-            Plan Trip
+          <a href="#saved-plans-section" className="apple-button-primary">
+            Open Saved Plans
           </a>
         </div>
 
@@ -70,11 +70,11 @@ export default function Navbar() {
             </a>
           ))}
           <a
-            href="#planning-section"
+            href="#saved-plans-section"
             className="apple-button-primary w-full py-4 text-base text-center"
             onClick={() => setIsOpen(false)}
           >
-            Start Planning
+            Open Saved Plans
           </a>
         </motion.div>
       )}

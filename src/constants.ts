@@ -14,10 +14,8 @@ export interface HeroPanoramaImage {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Batu Gantung", href: "#" },
-  { label: "Samosir", href: "#" },
-  { label: "Parapat", href: "#" },
-  { label: "Culinary", href: "#" },
+  { label: "Plan Builder", href: "#planning-section" },
+  { label: "Saved Plans", href: "#saved-plans-section" },
 ];
 
 export const HERO_PANORAMA_IMAGES: HeroPanoramaImage[] = [
@@ -51,4 +49,15 @@ export const INTEREST_OPTIONS = [
   "Photography",
   "Local Markets",
   "Hidden Waterfalls"
+];
+
+export const STAY_DURATION_OPTIONS = [
+  "1 Day",
+  "2 Days",
+  "3 Days",
+  "4 Days",
+  "5 Days",
+  "7 Days",
+  "10 Days",
+  "14 Days",
 ];

@@ -63,14 +63,6 @@ export default function Hero({ onStart }: { onStart: () => void }) {
       </div>
 
       <div className="relative z-10 max-w-4xl text-center text-white px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-center gap-2 mb-6 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 w-fit mx-auto"
-        >
-          <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Lake Toba Panorama</span>
-        </motion.div>
-
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

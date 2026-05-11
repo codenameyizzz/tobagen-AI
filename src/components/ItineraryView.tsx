@@ -5,11 +5,20 @@
 
 import { motion } from "motion/react";
 import type { TobaItinerary } from "../services/itineraryService";
-import { Calendar, MapPin, Sparkles, Clock, Globe } from "lucide-react";
+import { BookmarkPlus, Calendar, MapPin, Sparkles, Clock, Globe } from "lucide-react";
 
-export default function ItineraryView({ itinerary }: { itinerary: TobaItinerary }) {
+export default function ItineraryView({
+  itinerary,
+  onSave,
+  isSaved,
+}: {
+  itinerary: TobaItinerary;
+  onSave: () => void;
+  isSaved: boolean;
+}) {
   return (
-    <motion.div 
+    <motion.div
+      id="generated-plan-section"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       className="max-w-7xl mx-auto py-20 px-8"
@@ -20,11 +29,23 @@ export default function ItineraryView({ itinerary }: { itinerary: TobaItinerary 
           <span className="text-[10px] font-bold uppercase tracking-[0.3em]">AI Intelligence</span>
         </div>
         <h2 className="text-5xl font-semibold tracking-tight mb-6 leading-tight">{itinerary.title}</h2>
-        <p className="text-lg text-apple-subtext font-normal leading-relaxed">{itinerary.summary}</p>
+        <p className="text-lg text-apple-subtext font-normal leading-relaxed mb-8">{itinerary.summary}</p>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={isSaved}
+          className={`inline-flex items-center gap-3 rounded-full px-7 py-4 font-semibold transition-all ${
+            isSaved
+              ? "bg-apple-blue/10 text-apple-blue border border-apple-blue/20 cursor-default"
+              : "bg-apple-blue text-white hover:bg-blue-700 shadow-xl shadow-apple-blue/15"
+          }`}
+        >
+          <BookmarkPlus className="w-5 h-5" />
+          {isSaved ? "Saved to your plans" : "Save this recommendation"}
+        </button>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Itinerary */}
         <div className="lg:col-span-2 space-y-8">
           {itinerary.days.map((day) => (
             <div key={day.day} className="apple-glass p-10 rounded-apple-lg border-apple-border">
@@ -40,8 +61,8 @@ export default function ItineraryView({ itinerary }: { itinerary: TobaItinerary 
 
               <div className="space-y-6">
                 {day.activities.map((activity, idx) => (
-                  <motion.div 
-                    key={idx}
+                  <motion.div
+                    key={`${day.day}-${idx}-${activity.activity}`}
                     whileHover={{ scale: 1.01 }}
                     className="bg-apple-bg/40 p-6 rounded-2xl border border-apple-border/50 group"
                   >
@@ -69,7 +90,6 @@ export default function ItineraryView({ itinerary }: { itinerary: TobaItinerary 
           ))}
         </div>
 
-        {/* Sidebar Info */}
         <div className="space-y-8">
           <div className="apple-card p-10 relative overflow-hidden group">
             <Globe className="absolute -right-12 -bottom-12 w-48 h-48 text-apple-bg group-hover:rotate-12 transition-transform duration-1000" />

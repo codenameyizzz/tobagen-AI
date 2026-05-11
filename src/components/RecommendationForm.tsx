@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { INTEREST_OPTIONS, VIBE_OPTIONS } from "../constants";
+import { INTEREST_OPTIONS, STAY_DURATION_OPTIONS, VIBE_OPTIONS } from "../constants";
 import type { RecommendationRequest } from "../services/itineraryService";
 import { Check } from "lucide-react";
 
@@ -19,7 +19,7 @@ export default function RecommendationForm({
   isLoading: boolean;
 }) {
   const [formData, setFormData] = useState<RecommendationRequest>({
-    duration: "3 Days",
+    duration: "1 Day",
     travelers: "2 People",
     interests: [],
     vibe: "Adventurous"
@@ -77,7 +77,7 @@ export default function RecommendationForm({
             <div className="space-y-4">
               <label className="text-[10px] uppercase tracking-widest font-bold text-apple-subtext">Stay Duration</label>
               <div className="grid grid-cols-2 gap-2">
-                {["3 Days", "5 Days", "7 Days", "10 Days"].map(d => (
+                {STAY_DURATION_OPTIONS.map(d => (
                   <button
                     key={d}
                     onClick={() => setFormData({ ...formData, duration: d })}
