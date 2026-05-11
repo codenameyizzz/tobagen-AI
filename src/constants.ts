@@ -14,8 +14,8 @@ export interface HeroPanoramaImage {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Plan Builder", href: "#planning-section" },
-  { label: "Saved Plans", href: "#saved-plans-section" },
+  { label: "Plan Builder", href: "/#planning-section" },
+  { label: "Saved Plans", href: "/saved-plans" },
 ];
 
 export const HERO_PANORAMA_IMAGES: HeroPanoramaImage[] = [

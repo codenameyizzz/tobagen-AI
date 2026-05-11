@@ -11,7 +11,7 @@ export default function SavedPlans({
   onDelete: (planId: string) => void;
 }) {
   return (
-    <section id="saved-plans-section" className="max-w-6xl mx-auto py-20 px-8">
+    <section id="saved-plans-section" className="max-w-6xl mx-auto px-8 pb-20 pt-36">
       <div className="flex items-center gap-3 mb-4 text-apple-blue">
         <Bookmark className="w-5 h-5" />
         <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Saved Plans</span>

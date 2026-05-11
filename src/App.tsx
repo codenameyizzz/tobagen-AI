@@ -26,7 +26,14 @@ export default function App() {
   const [hasLoadedSavedPlans, setHasLoadedSavedPlans] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [routePath, setRoutePath] = useState(() => window.location.pathname);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const syncRoute = () => setRoutePath(window.location.pathname);
+    window.addEventListener('popstate', syncRoute);
+    return () => window.removeEventListener('popstate', syncRoute);
+  }, []);
 
   useEffect(() => {
     setSavedPlans(loadSavedPlans());
@@ -45,6 +52,27 @@ export default function App() {
     window.setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  };
+
+  const navigateTo = (href: string) => {
+    const nextUrl = new URL(href, window.location.origin);
+    const nextPath = nextUrl.pathname;
+    const nextLocation = `${nextPath}${nextUrl.hash}`;
+
+    if (window.location.pathname !== nextPath || window.location.hash !== nextUrl.hash) {
+      window.history.pushState({}, '', nextLocation);
+    }
+
+    setRoutePath(nextPath);
+
+    window.setTimeout(() => {
+      if (nextUrl.hash) {
+        document.querySelector(nextUrl.hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
   };
 
   const handleGenerate = async (req: RecommendationRequest) => {
@@ -101,6 +129,7 @@ export default function App() {
   const handleOpenSavedPlan = (plan: SavedPlan) => {
     setItinerary(plan.itinerary);
     setError(null);
+    navigateTo('/');
     scrollToResults();
   };
 
@@ -115,49 +144,53 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <Navbar />
+      <Navbar onNavigate={navigateTo} />
 
       <main>
-        <Hero />
+        {routePath === '/saved-plans' ? (
+          <SavedPlans
+            plans={savedPlans}
+            onOpen={handleOpenSavedPlan}
+            onDelete={handleDeleteSavedPlan}
+          />
+        ) : (
+          <>
+            <Hero />
 
-        <RecommendationForm
-          onSubmit={handleGenerate}
-          onChatSubmit={handleChatGenerate}
-          isLoading={isLoading}
-        />
+            <RecommendationForm
+              onSubmit={handleGenerate}
+              onChatSubmit={handleChatGenerate}
+              isLoading={isLoading}
+            />
 
-        <SavedPlans
-          plans={savedPlans}
-          onOpen={handleOpenSavedPlan}
-          onDelete={handleDeleteSavedPlan}
-        />
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="max-w-2xl mx-auto px-6 mb-10"
+                >
+                  <div className="flex items-center gap-4 bg-red-50 text-red-600 p-6 rounded-[2rem] border border-red-100">
+                    <AlertCircle className="w-6 h-6 flex-shrink-0" />
+                    <p className="font-medium">{error}</p>
+                  </div>
+                </motion.div>
+              )}
 
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="max-w-2xl mx-auto px-6 mb-10"
-            >
-              <div className="flex items-center gap-4 bg-red-50 text-red-600 p-6 rounded-[2rem] border border-red-100">
-                <AlertCircle className="w-6 h-6 flex-shrink-0" />
-                <p className="font-medium">{error}</p>
-              </div>
-            </motion.div>
-          )}
-
-          {itinerary && (
-            <div ref={resultsRef}>
-              <ItineraryView
-                itinerary={itinerary}
-                onSave={handleSavePlan}
-                onExportPdf={handleExportPdf}
-                isSaved={isCurrentPlanSaved}
-              />
-            </div>
-          )}
-        </AnimatePresence>
+              {itinerary && (
+                <div ref={resultsRef}>
+                  <ItineraryView
+                    itinerary={itinerary}
+                    onSave={handleSavePlan}
+                    onExportPdf={handleExportPdf}
+                    isSaved={isCurrentPlanSaved}
+                  />
+                </div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
       </main>
 
       <Footer />

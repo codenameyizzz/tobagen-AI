@@ -8,13 +8,19 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { NAV_ITEMS } from "../constants";
 
-export default function Navbar() {
+export default function Navbar({ onNavigate }: { onNavigate: (href: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleNavigation = (href: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    onNavigate(href);
+    setIsOpen(false);
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-8 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between apple-glass rounded-full px-6 py-3 border-[#D2D2D7]">
-        <div className="flex items-center gap-2">
+        <a href="/" onClick={handleNavigation("/")} className="flex items-center gap-2">
           <div className="w-6 h-6 bg-apple-blue rounded-full flex items-center justify-center">
             <div className="w-2 h-2 bg-white rounded-full"></div>
           </div>
@@ -22,7 +28,7 @@ export default function Navbar() {
             TobaGen
             <span className="font-light text-apple-subtext ml-1 text-sm uppercase tracking-tighter">AI Discovery</span>
           </span>
-        </div>
+        </a>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
@@ -30,12 +36,13 @@ export default function Navbar() {
             <a
               key={item.label}
               href={item.href}
+              onClick={handleNavigation(item.href)}
               className="text-sm font-medium text-apple-secondary hover:text-black transition-colors"
             >
               {item.label}
             </a>
           ))}
-          <a href="#saved-plans-section" className="apple-button-primary">
+          <a href="/saved-plans" onClick={handleNavigation("/saved-plans")} className="apple-button-primary">
             Open Saved Plans
           </a>
         </div>
@@ -64,15 +71,15 @@ export default function Navbar() {
               key={item.label}
               href={item.href}
               className="text-lg font-medium text-apple-text"
-              onClick={() => setIsOpen(false)}
+              onClick={handleNavigation(item.href)}
             >
               {item.label}
             </a>
           ))}
           <a
-            href="#saved-plans-section"
+            href="/saved-plans"
             className="apple-button-primary w-full py-4 text-base text-center"
-            onClick={() => setIsOpen(false)}
+            onClick={handleNavigation("/saved-plans")}
           >
             Open Saved Plans
           </a>
