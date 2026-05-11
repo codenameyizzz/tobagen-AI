@@ -5,15 +5,17 @@
 
 import { motion } from "motion/react";
 import type { TobaItinerary } from "../services/itineraryService";
-import { BookmarkPlus, Calendar, MapPin, Sparkles, Clock, Globe } from "lucide-react";
+import { BookmarkPlus, Calendar, Download, MapPin, Sparkles, Clock, Globe } from "lucide-react";
 
 export default function ItineraryView({
   itinerary,
   onSave,
+  onExportPdf,
   isSaved,
 }: {
   itinerary: TobaItinerary;
   onSave: () => void;
+  onExportPdf: () => void;
   isSaved: boolean;
 }) {
   return (
@@ -30,19 +32,31 @@ export default function ItineraryView({
         </div>
         <h2 className="text-5xl font-semibold tracking-tight mb-6 leading-tight">{itinerary.title}</h2>
         <p className="text-lg text-apple-subtext font-normal leading-relaxed mb-8">{itinerary.summary}</p>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={isSaved}
-          className={`inline-flex items-center gap-3 rounded-full px-7 py-4 font-semibold transition-all ${
-            isSaved
-              ? "bg-apple-blue/10 text-apple-blue border border-apple-blue/20 cursor-default"
-              : "bg-apple-blue text-white hover:bg-blue-700 shadow-xl shadow-apple-blue/15"
-          }`}
-        >
-          <BookmarkPlus className="w-5 h-5" />
-          {isSaved ? "Saved to your plans" : "Save this recommendation"}
-        </button>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={isSaved}
+            className={`inline-flex items-center justify-center gap-3 rounded-full px-7 py-4 font-semibold transition-all min-w-[220px] ${
+              isSaved
+                ? "bg-apple-blue/10 text-apple-blue border border-apple-blue/20 cursor-default"
+                : "bg-apple-blue text-white hover:bg-blue-700 shadow-xl shadow-apple-blue/15"
+            }`}
+          >
+            <BookmarkPlus className="w-5 h-5" />
+            {isSaved ? "Saved to your plans" : "Save this recommendation"}
+          </button>
+
+          <button
+            type="button"
+            onClick={onExportPdf}
+            className="inline-flex items-center justify-center gap-3 rounded-full px-7 py-4 font-semibold min-w-[220px] bg-white text-apple-blue border border-apple-blue/20 hover:border-apple-blue/50 hover:bg-blue-50 transition-all shadow-lg shadow-blue-100/50"
+          >
+            <Download className="w-5 h-5" />
+            Export as PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">

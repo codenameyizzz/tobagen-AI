@@ -5,12 +5,11 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
 import { HERO_PANORAMA_IMAGES } from "../constants";
 
 const HERO_ROTATION_MS = 5000;
 
-export default function Hero({ onStart }: { onStart: () => void }) {
+export default function Hero() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   useEffect(() => {
@@ -77,23 +76,10 @@ export default function Hero({ onStart }: { onStart: () => void }) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
+          className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto font-normal leading-relaxed"
         >
           Explore curated journeys across Danau Toba with live panorama-inspired visuals, Batak cultural highlights, and AI-assisted itinerary planning.
         </motion.p>
-
-        <motion.button
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onStart}
-          type="button"
-          className="bg-white text-apple-text px-10 py-5 rounded-full font-bold text-lg shadow-2xl hover:bg-white/90 transition-all flex items-center gap-3 mx-auto"
-        >
-          Create Journey
-          <ArrowRight className="w-5 h-5" />
-        </motion.button>
       </div>
     </section>
   );

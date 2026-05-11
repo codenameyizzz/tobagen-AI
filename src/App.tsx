@@ -96,6 +96,15 @@ export default function App() {
     setSavedPlans((currentPlans) => [nextPlan, ...currentPlans]);
   };
 
+  const handleExportPdf = async () => {
+    if (!itinerary) {
+      return;
+    }
+
+    const { exportItineraryPdf } = await import('./utils/exportItineraryPdf');
+    exportItineraryPdf(itinerary);
+  };
+
   const handleOpenSavedPlan = (plan: SavedPlan) => {
     setItinerary(plan.itinerary);
     setError(null);
@@ -104,10 +113,6 @@ export default function App() {
 
   const handleDeleteSavedPlan = (planId: string) => {
     setSavedPlans((currentPlans) => currentPlans.filter((plan) => plan.id !== planId));
-  };
-
-  const scrollToPlan = () => {
-    document.getElementById('planning-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const isCurrentPlanSaved = Boolean(
@@ -120,7 +125,7 @@ export default function App() {
       <Navbar />
 
       <main>
-        <Hero onStart={scrollToPlan} />
+        <Hero />
 
         <RecommendationForm
           onSubmit={handleGenerate}
@@ -151,7 +156,12 @@ export default function App() {
 
           {itinerary && (
             <div ref={resultsRef}>
-              <ItineraryView itinerary={itinerary} onSave={handleSavePlan} isSaved={isCurrentPlanSaved} />
+              <ItineraryView
+                itinerary={itinerary}
+                onSave={handleSavePlan}
+                onExportPdf={handleExportPdf}
+                isSaved={isCurrentPlanSaved}
+              />
             </div>
           )}
         </AnimatePresence>
