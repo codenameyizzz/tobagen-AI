@@ -1,49 +1,47 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createItineraryResponse } from '../server/httpHandlers';
-import { loadEnvironment } from '../server/config';
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-loadEnvironment(rootDir);
-
-export default {
-  async fetch(request: Request) {
-    try {
-      if (request.method !== 'POST') {
-        return Response.json(
-          { error: 'Method not allowed.' },
-          {
-            status: 405,
-            headers: {
-              Allow: 'POST',
-            },
-          },
-        );
-      }
-
-      const body = await request.json().catch(() => null);
-      const response = await createItineraryResponse(body);
-
-      return Response.json(response.body, {
-        status: response.status,
-        headers: {
-          'Cache-Control': 'no-store',
-        },
-      });
-    } catch (error) {
-      console.error('Unhandled Vercel itinerary function error:', error);
-
-      return Response.json(
-        {
-          error: error instanceof Error ? error.message : 'Unhandled itinerary function error.',
-        },
-        {
-          status: 500,
-          headers: {
-            'Cache-Control': 'no-store',
-          },
-        },
-      );
-    }
-  },
+type ApiRequest = {
+  method?: string;
+  body?: unknown;
 };
+
+type ApiResponse = {
+  status: (statusCode: number) => ApiResponse;
+  setHeader: (name: string, value: string) => void;
+  json: (body: unknown) => void;
+};
+
+export default async function handler(req: ApiRequest, res: ApiResponse) {
+  try {
+    if (req.method !== 'POST') {
+      res.setHeader('Allow', 'POST');
+      sendJson(res, 405, { error: 'Method not allowed.' });
+      return;
+    }
+
+    const response = await createItineraryResponse(parseBody(req.body));
+    sendJson(res, response.status, response.body);
+  } catch (error) {
+    console.error('Unhandled Vercel itinerary function error:', error);
+    sendJson(res, 500, {
+      error: error instanceof Error ? error.message : 'Unhandled itinerary function error.',
+    });
+  }
+}
+
+function parseBody(body: unknown): unknown {
+  if (typeof body !== 'string') {
+    return body;
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    return null;
+  }
+}
+
+function sendJson(res: ApiResponse, status: number, body: unknown) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(status).json(body);
+}
