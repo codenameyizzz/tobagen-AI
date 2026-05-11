@@ -167,6 +167,11 @@ export async function generateItinerary(config: RuntimeConfig, input: ValidatedP
 }
 
 export function getUserFacingGenerationError(error: unknown, config: RuntimeConfig): string {
+  const credentialError = getCredentialError(error);
+  if (credentialError) {
+    return credentialError;
+  }
+
   const modelError = getModelConfigurationError(error, config);
   if (modelError) {
     return modelError;
@@ -248,6 +253,29 @@ function getModelConfigurationError(error: unknown, config: RuntimeConfig): stri
   }
 
   return `Gemini model is not available for generateContent. Current primary model: ${config.primaryModel}. Current fallback model: ${config.fallbackModel}.`;
+}
+
+function getCredentialError(error: unknown): string | null {
+  const errorSignal = extractErrorSignal(error);
+
+  if (errorSignal.message.includes('reported as leaked')) {
+    return 'The Gemini API key configured on this deployment has been blocked because it was reported as leaked. Revoke it, create a new key, update GEMINI_API_KEY in Vercel, then redeploy.';
+  }
+
+  const isAuthFailure = errorSignal.statusCode === 401 || errorSignal.statusCode === 403;
+  const authPatterns = [
+    'api key',
+    'permission_denied',
+    'permission denied',
+    'unauthenticated',
+    'invalid credential',
+  ];
+
+  if (isAuthFailure && authPatterns.some((pattern) => errorSignal.message.includes(pattern))) {
+    return 'Gemini rejected the configured API key. Check GEMINI_API_KEY in your Vercel environment variables, then redeploy after updating it.';
+  }
+
+  return null;
 }
 
 function extractErrorSignal(error: unknown) {
