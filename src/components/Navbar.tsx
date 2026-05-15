@@ -25,7 +25,7 @@ export default function Navbar({ onNavigate }: { onNavigate: (href: string) => v
             <div className="w-2 h-2 bg-white rounded-full"></div>
           </div>
           <span className="text-lg font-semibold tracking-tight text-apple-text">
-            TobaGen
+            TobaRecs
             <span className="font-light text-apple-subtext ml-1 text-sm uppercase tracking-tighter">AI Discovery</span>
           </span>
         </a>

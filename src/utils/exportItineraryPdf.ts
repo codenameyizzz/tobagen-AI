@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import type { TobaItinerary } from '../services/itineraryService';
 import { formatCoordinates, getGoogleMapsUrl } from './googleMaps';
 
-const PRODUCT_NAME = 'TobaGen AI Discovery';
+const PRODUCT_NAME = 'TobaRecs AI Discovery';
 const COLORS = {
   blue: [10, 102, 194] as const,
   blueLight: [232, 241, 255] as const,
