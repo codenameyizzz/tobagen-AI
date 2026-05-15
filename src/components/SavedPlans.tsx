@@ -21,7 +21,7 @@ export default function SavedPlans({
         <div>
           <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-3">Your saved Lake Toba plans</h2>
           <p className="text-apple-subtext max-w-2xl">
-            Save the best itineraries from Gemini and reopen them anytime without generating from scratch.
+            Save the best itineraries and reopen them anytime without generating from scratch.
           </p>
         </div>
         <div className="text-sm text-apple-subtext">{plans.length} plan{plans.length === 1 ? "" : "s"} saved</div>
