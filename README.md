@@ -1,6 +1,6 @@
 # TobaGen AI Discovery
 
-TobaGen AI Discovery adalah aplikasi web untuk membuat itinerary perjalanan Danau Toba berbasis Gemini. Project ini mendukung development lokal dengan Vite + Express, deployment gratis di Vercel Hobby, penyimpanan itinerary di browser, export PDF, serta preview lokasi rekomendasi melalui Google Maps embed.
+TobaGen AI Discovery adalah aplikasi web untuk membuat itinerary perjalanan Danau Toba berbasis AI. Project ini mendukung development lokal dengan Vite + Express, deployment gratis di Vercel Hobby, penyimpanan itinerary di browser, export PDF, serta preview lokasi rekomendasi melalui Google Maps embed.
 
 ## Tech Stack
 
@@ -12,14 +12,13 @@ TobaGen AI Discovery adalah aplikasi web untuk membuat itinerary perjalanan Dana
 - Lucide React untuk icon system.
 - Express untuk API server lokal.
 - Vercel Serverless Functions untuk API production.
-- `@google/genai` untuk integrasi Gemini.
 - jsPDF untuk export itinerary ke PDF.
 - Browser `localStorage` dan cookie fallback untuk saved plans.
 
 ## Fitur Utama
 
 - Generate itinerary Danau Toba dari form preference atau chat prompt.
-- Fallback model Gemini otomatis ketika model utama terkena quota/rate-limit.
+- Fallback model otomatis ketika model utama terkena quota/rate-limit.
 - Saved plans di browser user.
 - Page khusus `/saved-plans` untuk melihat dan membuka itinerary tersimpan.
 - Export itinerary ke PDF dengan layout card, watermark, footer, dan link Google Maps.
@@ -40,7 +39,7 @@ TobaGen AI Discovery adalah aplikasi web untuk membuat itinerary perjalanan Dana
 |   |-- config.ts              # Runtime config dan env loading
 |   |-- httpHandlers.ts        # Handler shared untuk Express dan Vercel
 |   |-- index.ts               # Express server lokal dan production-style serve
-|   `-- itineraryCore.ts       # Validasi payload, Gemini call, fallback, error mapping
+|   `-- itineraryCore.ts       # Validasi payload, model call, fallback, error mapping
 |-- shared/
 |   `-- itinerary.ts           # Shared TypeScript types dan runtime guards
 |-- src/
@@ -65,7 +64,7 @@ Project ini memakai pemisahan lapisan sederhana:
 - `api/` hanya adapter tipis untuk Vercel Serverless Functions.
 - `shared/` berisi kontrak data yang dipakai frontend dan backend.
 
-Pendekatan ini menghindari duplikasi logic antara lokal dan production. Endpoint `/api/itinerary` di Express dan Vercel sama-sama memanggil `createItineraryResponse()` dari `server/httpHandlers.ts`, lalu logic Gemini sebenarnya berada di `server/itineraryCore.ts`.
+Pendekatan ini menghindari duplikasi logic antara lokal dan production. Endpoint `/api/itinerary` di Express dan Vercel sama-sama memanggil `createItineraryResponse()` dari `server/httpHandlers.ts`, lalu logic generate itinerary sebenarnya berada di `server/itineraryCore.ts`.
 
 ## Flow Generate Itinerary
 
@@ -73,9 +72,9 @@ Pendekatan ini menghindari duplikasi logic antara lokal dan production. Endpoint
 2. Frontend memanggil `generateTobaRecommendations()` atau `generateChatRecommendation()` di `src/services/itineraryService.ts`.
 3. Service mengirim `POST /api/itinerary` dengan bentuk `{ mode, payload }`.
 4. API handler memvalidasi payload memakai guard dari `shared/itinerary.ts`.
-5. Server membuat prompt dan memanggil Gemini dengan model utama.
+5. Server membuat prompt dan memanggil model utama.
 6. Jika model utama terkena quota/rate-limit, server mencoba model fallback.
-7. Respons Gemini dipaksa berbentuk JSON sesuai schema itinerary.
+7. Respons model dipaksa berbentuk JSON sesuai schema itinerary.
 8. Server memvalidasi shape respons sebelum dikirim ke frontend.
 9. UI menampilkan itinerary, recommended places, Google Maps preview, tombol save, dan export PDF.
 
@@ -100,7 +99,7 @@ Google Maps integration berada di `src/utils/googleMaps.ts`.
 - `getGoogleMapsEmbedUrl()` membuat preview embed.
 - `formatCoordinates()` menjaga format koordinat konsisten di UI dan PDF.
 
-Integrasi ini tidak memakai Google Maps API key tambahan. Link dibuat dari nama tempat dan koordinat hasil Gemini. Jika butuh akurasi berbasis `place_id`, project perlu integrasi Google Places API secara terpisah.
+Integrasi ini tidak memakai Google Maps API key tambahan. Link dibuat dari nama tempat dan koordinat hasil rekomendasi. Jika butuh akurasi berbasis `place_id`, project perlu integrasi Google Places API secara terpisah.
 
 ## Flow Export PDF
 
@@ -133,16 +132,13 @@ Buat `.env.local` untuk development lokal.
 
 ```env
 PORT=3001
-GEMINI_API_KEY=your_real_gemini_key
-GEMINI_PRIMARY_MODEL=gemini-3-flash-preview
-GEMINI_FALLBACK_MODEL=gemini-3.1-flash-lite
 ```
 
 Catatan:
 
 - `.env*` sudah masuk `.gitignore`.
 - Jangan commit API key.
-- Jika Google menandai key sebagai leaked, key harus di-revoke dan diganti. Fallback model tidak akan membantu karena semua model tetap memakai API key yang sama.
+- Jika provider menandai key sebagai leaked, key harus di-revoke dan diganti. Fallback model tidak akan membantu karena semua model tetap memakai API key yang sama.
 - `PORT` tidak diperlukan di Vercel.
 
 ## Local Development
@@ -220,11 +216,7 @@ Konfigurasi penting di `vercel.json`:
 
 Environment variables yang wajib diset di Vercel:
 
-```env
-GEMINI_API_KEY=your_real_gemini_key
-GEMINI_PRIMARY_MODEL=gemini-3-flash-preview
-GEMINI_FALLBACK_MODEL=gemini-3.1-flash-lite
-```
+- Tambahkan seluruh environment variables yang dibutuhkan aplikasi sesuai konfigurasi lokal.
 
 Set minimal untuk `Production`. Jika memakai preview deployment, set juga untuk `Preview`.
 
@@ -235,7 +227,7 @@ Set minimal untuk `Production`. Jika memakai preview deployment, set juga untuk 
 3. Jalankan `npm run build`.
 4. Push ke repository.
 5. Import repository ke Vercel.
-6. Set environment variables Gemini di Vercel.
+6. Set environment variables aplikasi di Vercel.
 7. Deploy.
 8. Cek `/api/health`.
 9. Generate itinerary dari deployment.
@@ -245,11 +237,11 @@ Set minimal untuk `Production`. Jika memakai preview deployment, set juga untuk 
 
 Beberapa kondisi yang sudah ditangani:
 
-- Missing `GEMINI_API_KEY` memberi pesan konfigurasi.
+- Missing required environment variables memberi pesan konfigurasi.
 - Model tidak ditemukan memberi pesan model config.
 - Quota/rate-limit model utama memicu fallback model.
 - API key leaked atau invalid memberi pesan agar key diganti.
-- Respons Gemini yang tidak sesuai schema ditolak sebelum masuk UI.
+- Respons model yang tidak sesuai schema ditolak sebelum masuk UI.
 - Respons API non-JSON diubah menjadi error message aman di frontend.
 
 ## Best Practice yang Dipakai
@@ -264,14 +256,14 @@ Beberapa kondisi yang sudah ditangani:
 
 ## Catatan Keamanan
 
-- Jangan pernah hardcode Gemini API key di source.
+- Jangan pernah hardcode API key di source.
 - Jika key pernah dikirim di chat, issue tracker, commit, atau log publik, segera revoke.
 - Gunakan Vercel Environment Variables untuk deployment.
 - Periksa `/api/health`; field `configured: true` hanya menandakan key ada, bukan key valid.
 
 ## Troubleshooting
 
-Jika generate gagal dengan `Your API key was reported as leaked`, buat API key baru dan update `GEMINI_API_KEY` di Vercel.
+Jika generate gagal dengan `Your API key was reported as leaked`, buat API key baru dan update environment variable yang sesuai di Vercel.
 
 Jika Vercel menampilkan `FUNCTION_INVOCATION_FAILED`, cek function logs. Error import ESM biasanya terkait import relatif tanpa ekstensi `.js`.
 
